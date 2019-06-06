@@ -4,11 +4,11 @@
 # truth
 guilty <- 0
 I <- 1
-p1 <- .8 #prob evidence|guilty=1 (true positive)
-p2 <- .3 #prob evidence|guilty=0 (false positive)
+p1 <- .5 #prob evidence|guilty=1 (true positive)
+p2 <- .05 #prob evidence|guilty=0 (false positive)
 p_guilty <- .05 #baseline prob of guilty (1/N, eg)
 i_bias <- .05 #bias from I
-e_bias <- .1 #bias spilling over from other evidence
+e_bias <- .2 #bias spilling over from other evidence
 
 p_evidence <- function(g){p1*g + p2*(1-g)}
 post_guilty <- function(e1,e2,e3,p_guilty){
@@ -39,12 +39,12 @@ for(j in 1:n){
     e3_unbiased <- rbinom(1,1,bound_01(p_evidence(guilty)))
     
     # final determination
-    determined_guilt <- post_guilty(e1,e2,e3,p_guilty)
-    determined_guilt_unbiased <- post_guilty(e1_unbiased,e2_unbiased,e3_unbiased,p_guilty)
+    determined_guilt <- post_guilty(e1,e2,e3,p_guilty)>.5
+    determined_guilt_unbiased <- post_guilty(e1_unbiased,e2_unbiased,e3_unbiased,p_guilty)>.5
     
     # errors
-    errs[i,] <- c(determined_guilt,e1,e2,e3)
-    errs_unbiased[i,] <- c(determined_guilt_unbiased,e1_unbiased,e2_unbiased,e3_unbiased)
+    errs[i,] <- c((guilty-determined_guilt)^2,e1,e2,e3)
+    errs_unbiased[i,] <- c((guilty-determined_guilt_unbiased)^2,e1_unbiased,e2_unbiased,e3_unbiased)
   }
   
   out_biased[j,] <- apply(errs,2,mean)
