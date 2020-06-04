@@ -11,7 +11,7 @@ filled.x <- x
 filled.x[missing] <- sapply(missing, function(k) sample(c(y[k], NA), size = 1))
 
 df <- data.frame(dat = c(x, filled.x, y), names = rep(c('1.obs', '2.filled','3.y'), each = 100))
-levels(df$names) <- c("Observed","Filled","Y")
+levels(df$names) <- c("Observed","Observed After Imputation","Complete")
 
 g <- ggplot(data = df) + 
   geom_histogram(aes(x = dat, y = ..density..), binwidth = 2) + 
@@ -19,4 +19,4 @@ g <- ggplot(data = df) +
   facet_wrap(~names) + 
   xlab("Comparing Y with X before and after imputing half of missing data points")+
   theme_bw()
-
+ggsave(g, filename = '~/repos/Forensic_bias/outputs/likelihood_sim.png')
