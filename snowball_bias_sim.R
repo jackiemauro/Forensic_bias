@@ -35,14 +35,13 @@ total.bias <- function(i,m,mhat,share.miss){delta.func(i,m,share.miss)*delta.til
 
 g = 0 # 0 means not guilty
 i = 1 # 1 means has characteristic
-k = 5 # pieces of evidence
+k = 10 # pieces of evidence
 
 # evidence is binom(10,mu1) if guilty, binom(10,mu0) if not guilty
-mu1 = .6; mu0=.4
+mu1 = .5; mu0=.25
 
 nsims = 1000
 output = list()
-temp = c()
 for(sim.round in 1:nsims){
   xy = sapply(1:k, function(j) ifelse(g==1, sum(rbinom(10,1,mu1)), sum(rbinom(10,1,mu0))))
   lik.ratio = sapply(xy, function(j) dbinom(j,10,mu1)/dbinom(j,10,mu0))
@@ -69,6 +68,9 @@ summary = sim.out %>%
 
 g <- ggplot(summary, aes(x = evidence, y = share_declared_match, fill = type))+
   geom_bar(stat = 'identity', position = 'dodge')+
+  xlab("Piece of Evidence") + ylab("Share declared a match")+
   theme_bw()
 
 g
+
+#ggsave(filename = '~/repos/Forensic_bias/outputs/SnowballFigure.png')
