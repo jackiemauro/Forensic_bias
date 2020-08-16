@@ -116,7 +116,7 @@ for(sim.round in 1:nsims){
   matching <- lapply(variants, function(j) mean(apply(j,1,function(x) all((1*(x>=1))==decl.matches))))
   PM[sim.round] = matching[[1]]/matching[[2]]
   PMhat[sim.round] = matching[[5]]/matching[[6]]
-}x
+}
 
 #PM is higher than PMhat because PM is the chances of guilt if you don't adjust for bias
 PM[is.infinite(PM)] <- 50
@@ -130,7 +130,8 @@ mean(PMhat>1, na.rm = T)
 
 df <- data.frame(posterior = c(PM,PMhat), num_matches = rep(num_matches,2), type = rep(c("Unadjusted","Adjusted"),each = nsims))
 summary <- df %>% group_by(type, num_matches) %>%
-  summarise(num_convicted = sum(posterior>1, na.rm = T),
+  summarise(num_total = length(posterior),
+            num_convicted = sum(posterior>1, na.rm = T),
             rate= 100*sum(posterior>1, na.rm = T)/length(posterior))
 
 p1 <- ggplot(summary, aes(x = num_matches, y = num_convicted, fill = type)) +

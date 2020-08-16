@@ -5,7 +5,7 @@ library(ggplot2)
 x_full <- rpois(100,2)
 y <- rpois(100,5)
 x <- x_full
-missing <- sample(1:100, size = 90, replace = F)
+missing <- sample(1:100, size = 50, replace = F)
 x[missing] <- NA
 filled.x <- x
 filled.x[missing] <- sapply(missing, function(k) sample(c(y[k], NA), size = 1))
