@@ -23,6 +23,15 @@ y <- sapply(1:num_bits, gen_yi)
 y_miss <- y
 y_miss[sample(c(1:num_bits), 50)] <- NA
 
+miss_plot_df <- data.frame(Var1 = rep(1:40, 5), 
+                           Var2 = rep(1:5, each = 40),
+                           value = y_miss,
+                           Type = "1. Crime Scene Print")
+
+ggplot(miss_plot_df, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile() + xlab(NULL) + ylab(NULL) + 
+  ggtitle("Suspect print with missing pixels shown")
+
 gen_xi <- function(j){
   has_min <- as.numeric(ceiling(j/4) %in% x_big)
   p <- has_min
@@ -41,10 +50,14 @@ Y_imp <- matrix(apply(matrix(y_impute, ncol = 4, byrow = T), 1, rnd.mean), ncol 
 
 
 plot.df <- data.frame(rbind(melt(X),melt(Y_est),melt(Y_miss),melt(Y_imp)))
-plot.df$Type <- rep(c("X","True Y", "Missing Y", "Imputed Y"), each = sections)
+plot.df$Type <- rep(c("2. Marked Suspect Print (X)",
+                      "3. Full Info Marked Y", 
+                      "4. Marked Y without Imputation", 
+                      "5. Marked Y with Imputation"), each = sections)
+plot.df <- rbind(plot.df, miss_plot_df)
 ggplot(plot.df, aes(x = Var1, y = Var2, fill = value)) +
   geom_tile() + xlab(NULL) + ylab(NULL) +
-  facet_wrap(~Type)
+  facet_wrap(~Type, scales = "free_x") + theme_bw()
 
 sum(which(X==1)%in%which(Y==1))
 sum(which(X==1)%in%which(Y_est==1))
