@@ -26,7 +26,7 @@ y_miss[sample(c(1:num_bits), 50)] <- NA
 miss_plot_df <- data.frame(Var1 = rep(1:40, 5), 
                            Var2 = rep(1:5, each = 40),
                            value = y_miss,
-                           Type = "1. Crime Scene Print")
+                           Type = "1. Crime Scene Print (Y)")
 
 ggplot(miss_plot_df, aes(x = Var1, y = Var2, fill = value)) +
   geom_tile() + xlab(NULL) + ylab(NULL) + 
@@ -59,7 +59,47 @@ ggplot(plot.df, aes(x = Var1, y = Var2, fill = value)) +
   geom_tile() + xlab(NULL) + ylab(NULL) +
   facet_wrap(~Type, scales = "free_x") + theme_bw()
 
-sum(which(X==1)%in%which(Y==1))
-sum(which(X==1)%in%which(Y_est==1))
-sum(which(X==1)%in%which(Y_miss==1))
-sum(which(X==1)%in%which(Y_imp==1))
+# break out figures
+plot.df$type <- rep(c("Latent print (y)",
+                      "Exemplar (x)",
+                      "Criminal's true print", 
+                      "4. Marked Y without Imputation", 
+                      "Criminal's print marked"), each = sections)
+
+plot.df$type <- ifelse(plot.df$Type == "2. Marked Suspect Print (X)", "Exemplar (x)",
+                       ifelse(plot.df$Type == "3. Full Info Marked Y","Criminal's true print",
+                              ifelse(plot.df$Type == "4. Marked Y without Imputation","4. Marked Y without Imputation",
+                                     ifelse(plot.df$Type == "5. Marked Y with Imputation", "Criminal's marked print",
+                                            "Criminal's latent print (y)"))))
+
+ggplot(plot.df[plot.df$type %in% c("Criminal's latent print (y)","Exemplar (x)"),], 
+       aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile() + xlab(NULL) + ylab(NULL) +
+  facet_wrap(~type, scales = "free_x") + 
+  theme(legend.position = "none")
+ggsave("latentVsexemplar.png",width = 4, height = 2.5)
+
+ggplot(plot.df[plot.df$type %in% c("Criminal's true print","Exemplar (x)"),], 
+       aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile() + xlab(NULL) + ylab(NULL) +
+  facet_wrap(~type, scales = "free_x") + 
+  theme(legend.position = "none")
+ggsave("trueVsexemplar.png",width = 4, height = 2.5)
+
+ggplot(plot.df[plot.df$type %in% c("Criminal's marked print","Exemplar (x)"),], 
+       aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile() + xlab(NULL) + ylab(NULL) +
+  facet_wrap(~type, scales = "free_x") + 
+  theme(legend.position = "none")
+ggsave("markedVsexemplar.png",width = 4, height = 2.5)
+
+sum(which(X==1)%in%which(Y==1)) # true matches
+sum(which(X==1)%in%which(Y_est==1)) # matches marked without missingness
+sum(which(X==1)%in%which(Y_miss==1)) # matches in the presence of missingness
+sum(which(X==1)%in%which(Y_imp==1)) # matches with imputation
+
+# show where improper match is
+temp = Y
+temp[(X==Y) &(X==1)] <- 10
+temp[(X==1)&(Y_imp==1)&(Y_miss==0)] <- (-10)
+ggplot(melt(temp), aes(x = Var1, y = Var2, fill = value)) + geom_tile()
