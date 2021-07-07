@@ -4,7 +4,9 @@
 # pixels ~ bern(I(is minutia)*.75 + I(no_minutia)*.1)
 
 library(ggplot2)
+library(tidyverse)
 library(reshape2)
+
 set.seed(123)
 
 sections <- 50
