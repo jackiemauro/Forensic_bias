@@ -91,7 +91,7 @@ g2 <- miss_plot_df %>%
   geom_tile() + xlab(NULL) + ylab(NULL) + 
   geom_text(aes(label = minutiae)) +
   facet_grid(~Type) +
-  ggtitle("Full information prints") + 
+  ggtitle("Observed evidence has missing areas") + 
   scale_fill_grey(start = .8, end = 0, na.value = "black") +
   theme_minimal() +
   theme(legend.position = "none",
