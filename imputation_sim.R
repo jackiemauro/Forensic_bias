@@ -72,25 +72,64 @@ plot.df$type <- ifelse(plot.df$Type == "2. Marked Suspect Print (X)", "Exemplar 
                                      ifelse(plot.df$Type == "5. Marked Y with Imputation", "Criminal's marked print",
                                             "Criminal's latent print (y)"))))
 
-ggplot(plot.df[plot.df$type %in% c("Criminal's latent print (y)","Exemplar (x)"),], 
-       aes(x = Var1, y = Var2, fill = value)) +
-  geom_tile() + xlab(NULL) + ylab(NULL) +
-  facet_wrap(~type, scales = "free_x") + 
-  theme(legend.position = "none")
+plot.df %>%
+  filter(type %in% c("Criminal's latent print (y)","Exemplar (x)")) %>%
+  mutate(
+    type = ifelse(type == "Exemplar (x)", " Exemplar (x)", type), # for ordering facets
+    label = ifelse(value == 1, "*", NA) # Mark minutiae with *
+  ) %>%
+  ggplot(aes(x = Var1, y = Var2, fill = is.na(value))) +
+  geom_tile() + 
+  geom_text(aes(label = label)) +
+  xlab(NULL) + 
+  ylab(NULL) +
+  facet_wrap(vars(type), scales = "free_x") + 
+  scale_fill_grey(start = .8, end = 0, na.value = "black") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+
 ggsave("latentVsexemplar.png",width = 4, height = 2.5)
 
-ggplot(plot.df[plot.df$type %in% c("Criminal's true print","Exemplar (x)"),], 
-       aes(x = Var1, y = Var2, fill = value)) +
-  geom_tile() + xlab(NULL) + ylab(NULL) +
+plot.df %>%
+  filter(type %in% c("Criminal's true print","Exemplar (x)")) %>%
+  mutate(
+    type = ifelse(type == "Exemplar (x)", " Exemplar (x)", type), # for ordering facets
+    label = ifelse(value == 1, "*", NA) # Mark minutiae with *
+  ) %>%
+  ggplot(aes(x = Var1, y = Var2, fill = is.na(value))) +
+  geom_tile() + 
+  geom_text(aes(label = label)) +
+  xlab(NULL) + 
+  ylab(NULL) +
+  scale_fill_grey(start = .8, end = 0, na.value = "black") +
   facet_wrap(~type, scales = "free_x") + 
-  theme(legend.position = "none")
+  theme_minimal() +
+  theme(legend.position = "none",
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+
 ggsave("trueVsexemplar.png",width = 4, height = 2.5)
 
-ggplot(plot.df[plot.df$type %in% c("Criminal's marked print","Exemplar (x)"),], 
-       aes(x = Var1, y = Var2, fill = value)) +
-  geom_tile() + xlab(NULL) + ylab(NULL) +
+plot.df %>%
+  filter(type %in% c("Criminal's marked print","Exemplar (x)")) %>%
+  mutate(
+    type = ifelse(type == "Exemplar (x)", " Exemplar (x)", type), # for ordering facets
+    label = ifelse(value == 1, "*", NA) # Mark minutiae with *
+  ) %>%
+  ggplot(aes(x = Var1, y = Var2, fill = is.na(value))) +
+  geom_tile() + 
+  geom_text(aes(label = label)) +
+  xlab(NULL) + 
+  ylab(NULL) +
+  scale_fill_grey(start = .8, end = .2, na.value = "black") +
   facet_wrap(~type, scales = "free_x") + 
-  theme(legend.position = "none")
+  theme_minimal() +
+  theme(legend.position = "none",
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+
 ggsave("markedVsexemplar.png",width = 4, height = 2.5)
 
 sum(which(X==1)%in%which(Y==1)) # true matches
