@@ -84,7 +84,7 @@ Pi_EC = Pi #prob I=1 if E0^C (set to constant over pieces of evidence for simpli
 Prior = 1/N
 g = 0 # 0 means not guilty
 i = 1 # 1 means has characteristic
-k = 10 # pieces of evidence
+k = 5 # pieces of evidence
 
 mu1 = .5; mu0=.25
 
@@ -142,4 +142,105 @@ results %>%
   scale_color_viridis_d(option = "magma", end = .75) 
 
 ggsave(filename = 'outputs/SnowballFigure2.png')
+
+## V3 -- simplified 
+
+cascade_snowball_sim = function(nsims, share_missing, n_suspects, n_evidence){
+  output = list()
+  for(sim.round in 1:nsims){
+    xy = sapply(1:n_evidence, function(j) ifelse(g==1, sum(rbinom(n_evidence,1,mu1)), sum(rbinom(n_evidence,1,mu0))))
+    lik.ratio = sapply(xy, function(j) dbinom(j,n_evidence,mu1)/dbinom(j,n_evidence,mu0))
+    
+    # missing evidence (decides degree of imputation)
+    share.miss = rep(share_missing, n_evidence)
+    
+    mhat <- m <- m.cascade <- rep(NA,n_evidence)
+    m <- sapply(1:n_evidence, function(x) lik.ratio[x] * (Pi_E/Pi_EC) * (1/n_suspects))
+    m.cascade <- sapply(1:n_evidence, function(x) delta.func(i,m[x],share.miss[x])*m[x])
+    mhat[1] <- m.cascade[1]
+    
+    for(j in 2:n_evidence){mhat[j] <- total.bias(i,m[c(1:(j-1))],mhat[c(1:(j-1))], share.miss[j])*m[j]}
+    
+    output[[sim.round]] <- data.frame(posterior = c(m,m.cascade,mhat),
+                                      type = rep(c("Unbiased","Cascade","Snowball"), each = n_evidence),
+                                      evidence = rep(1:n_evidence,3),
+                                      round = rep(i,n_evidence*3))
+  }
+  sim.out = do.call(rbind, output)
+  summary = sim.out %>%
+    group_by(type,evidence) %>%
+    summarise(share_declared_match = mean(posterior>=1))
+  return(summary)
+}
+
+
+
+set.seed(081720)
+nsims = 1000
+share_missing = .01
+n_suspects = 2
+n_evidence = 5
+
+sim_params = expand.grid(share_missing = share_missing, n_suspects = n_suspects, n_evidence = n_evidence)
+
+results = c()
+for(ii in 1:nrow(sim_params)){
+  sim_sum = cascade_snowball_sim(1000, 
+                                 sim_params$share_missing[ii], 
+                                 sim_params$n_suspects[ii],
+                                 sim_params$n_evidence[ii]) %>%
+    mutate(share_missing = sim_params$share_missing[ii], 
+           n_suspects = sim_params$n_suspects[ii],
+           n_evidence = sim_params$n_evidence[ii])
+  results = rbind(results, sim_sum)
+}
+
+bias_gg_df = results %>%
+  pivot_wider(id_cols = c("evidence", "share_missing", "n_suspects"), names_from = type, values_from = share_declared_match) %>%
+  mutate(
+    `Bias Cascade` = Cascade - Unbiased,
+    `Bias Snowball` = Snowball - Unbiased,
+    `No Bias` = Unbiased - Unbiased,
+    analyst = LETTERS[evidence]
+  ) %>%
+  pivot_longer(c(`Bias Cascade`, `Bias Snowball`, `No Bias`), names_to = "type", values_to = "bias")
+
+snowball_df = bias_gg_df %>% 
+  filter(type == "Bias Snowball") %>%
+  mutate(xend = c(2:5, NA), 
+         yend = c(bias[2:5], NA))
+
+colors = c("#999999", "#41424C", "#ADADC9")
+
+bias_gg_df %>%
+  ggplot(., aes(x = analyst, y = bias, col = type)) +
+  geom_point(size = 5) +
+  geom_segment(data = snowball_df, 
+               aes(xend = xend, yend = yend), 
+               arrow = arrow(length = unit(0.5, "cm"),
+                             type = "open")) +
+  labs(x = "Analyst (sequential order)",
+       y = "Bias in Posterior",
+       col = "") +
+  annotate("errorbar", x = 0.8, ymin = 0, ymax = .25, col = "darkorange", width = .1) +
+  annotate("text", x = 0.8, y = .125, hjust = 1.5, label = expression(I[t[i]]), col = "darkorange", size = 6) +
+  annotate("errorbar", x = 2.1, ymin = .3, ymax = .42, col = "darkorange", width = .1) +
+  annotate("text", x = "B", y = .35, hjust = -.5, label = expression(LR[A]), col = "darkorange", size = 5) +
+  annotate("errorbar", x = 3.1, ymin = .26, ymax = .5, col = "darkorange", width = .1) +
+  annotate("text", x = "C", y = .38, hjust = -.5, label = expression(LR[B]), col = "darkorange", size = 5) +
+  annotate("errorbar", x = 4.1, ymin = .25, ymax = .54, col = "darkorange", width = .1) +
+  annotate("text", x = "D", y = .38, hjust = -.5, label = expression(LR[C]), col = "darkorange", size = 5) +
+  annotate("errorbar", x = 5.1, ymin = .25, ymax = .57, col = "darkorange", width = .1) +
+  annotate("text", x = "E", y = .38, hjust = -.5, label = expression(LR[D]), col = "darkorange", size = 5) +
+  annotate("text", x = "E", y = .577, hjust = -.15, label = "Bias Snowball", col = colors[2]) +
+  annotate("text", x = "E", y = .244, hjust = -.15, label = "Bias Cascade", col = colors[1]) +
+  annotate("text", x = "E", y = 0, hjust = -.15, label = "No Bias", col = colors[3]) +
+  theme_minimal() +
+  theme(legend.position = "none") + 
+  scale_x_discrete(expand = c(.01,.9)) +
+  scale_color_manual(values = colors)
+
+ggsave(filename = '~/Forensic_bias/outputs/snowball_vs_cascade.png',
+       width = 8,
+       height = 4)
 
