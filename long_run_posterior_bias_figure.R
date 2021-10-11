@@ -45,9 +45,10 @@ longrun_bias %>%
     linetype = ""
   )
 
-ggsave(filename = '~/Forensic_bias/outputs/long_run_posterior_bias.png',
+ggsave(filename = '~/Forensic_bias/outputs/long_run_posterior_bias.eps',
        width = 8,
-       height = 3)
+       height = 3,
+       dpi = 300)
 
 
 ## Old version: base R

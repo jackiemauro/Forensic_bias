@@ -210,37 +210,40 @@ snowball_df = bias_gg_df %>%
   mutate(xend = c(2:5, NA), 
          yend = c(bias[2:5], NA))
 
-colors = c("#999999", "#41424C", "#ADADC9")
+colors = gray.colors(3, start = 0.8, end = 0.4, gamma = 1.5, rev = FALSE)
 
 bias_gg_df %>%
+  mutate(
+    type = factor(type, levels = c("No Bias", "Bias Cascade", "Bias Snowball"))
+  ) %>%
   ggplot(., aes(x = analyst, y = bias, col = type)) +
   geom_point(size = 5) +
   geom_segment(data = snowball_df, 
-               aes(xend = xend, yend = yend), 
-               arrow = arrow(length = unit(0.5, "cm"),
+               aes(xend = xend - .1, yend = yend ), 
+               arrow = arrow(length = unit(0.3, "cm"),
                              type = "open")) +
   labs(x = "Analyst (sequential order)",
-       y = "Bias in Posterior",
+       y = "Bias in Posterior \n(Reported - Expected)",
        col = "") +
-  annotate("errorbar", x = 0.8, ymin = 0, ymax = .25, col = "darkorange", width = .1) +
-  annotate("text", x = 0.8, y = .125, hjust = 1.5, label = expression(I[t[i]]), col = "darkorange", size = 6) +
-  annotate("errorbar", x = 2.1, ymin = .3, ymax = .42, col = "darkorange", width = .1) +
-  annotate("text", x = "B", y = .35, hjust = -.5, label = expression(LR[A]), col = "darkorange", size = 5) +
-  annotate("errorbar", x = 3.1, ymin = .26, ymax = .5, col = "darkorange", width = .1) +
-  annotate("text", x = "C", y = .38, hjust = -.5, label = expression(LR[B]), col = "darkorange", size = 5) +
-  annotate("errorbar", x = 4.1, ymin = .25, ymax = .54, col = "darkorange", width = .1) +
-  annotate("text", x = "D", y = .38, hjust = -.5, label = expression(LR[C]), col = "darkorange", size = 5) +
-  annotate("errorbar", x = 5.1, ymin = .25, ymax = .57, col = "darkorange", width = .1) +
-  annotate("text", x = "E", y = .38, hjust = -.5, label = expression(LR[D]), col = "darkorange", size = 5) +
-  annotate("text", x = "E", y = .577, hjust = -.15, label = "Bias Snowball", col = colors[2]) +
-  annotate("text", x = "E", y = .244, hjust = -.15, label = "Bias Cascade", col = colors[1]) +
-  annotate("text", x = "E", y = 0, hjust = -.15, label = "No Bias", col = colors[3]) +
+  annotate("errorbar", x = 0.8, ymin = 0, ymax = .25, col = "red4", width = .05) +
+  annotate("text", x = 0.8, y = .125, hjust = 1.5, label = expression(I[t[i]]), col = "red4", size = 6) +
+  annotate("errorbar", x = 2.1, ymin = .3, ymax = .42, col = "red4", width = .05) +
+  annotate("text", x = "B", y = .35, hjust = -.5, label = expression(LR[A]), col = "red4", size = 5) +
+  annotate("errorbar", x = 3.1, ymin = .26, ymax = .5, col = "red4", width = .05) +
+  annotate("text", x = "C", y = .38, hjust = -.5, label = expression(LR[B]), col = "red4", size = 5) +
+  annotate("errorbar", x = 4.1, ymin = .25, ymax = .54, col = "red4", width = .05) +
+  annotate("text", x = "D", y = .38, hjust = -.5, label = expression(LR[C]), col = "red4", size = 5) +
+  annotate("errorbar", x = 5.1, ymin = .25, ymax = .57, col = "red4", width = .05) +
+  annotate("text", x = "E", y = .38, hjust = -.5, label = expression(LR[D]), col = "red4", size = 5) +
+  annotate("text", x = "E", y = .577, hjust = -.15, label = "Bias Snowball", col = colors[3]) +
+  annotate("text", x = "E", y = .244, hjust = -.15, label = "Bias Cascade", col = colors[2]) +
+  annotate("text", x = "E", y = 0, hjust = -.15, label = "No Bias", col = colors[1]) +
   theme_minimal() +
   theme(legend.position = "none") + 
   scale_x_discrete(expand = c(.01,.9)) +
   scale_color_manual(values = colors)
 
-ggsave(filename = '~/Forensic_bias/outputs/snowball_vs_cascade.png',
+ggsave(filename = '~/Forensic_bias/outputs/snowball_vs_cascade.eps',
        width = 8,
        height = 4)
 
