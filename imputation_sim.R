@@ -6,6 +6,7 @@
 library(ggplot2)
 library(tidyverse)
 library(reshape2)
+library(patchwork)
 
 set.seed(123)
 
@@ -100,6 +101,7 @@ p1 = plot.df %>%
   ggtitle("Actual Prints.") +
   scale_fill_grey(start = .8, end = 0, na.value = "black") +
   facet_wrap(~type, scales = "free_x") + 
+  theme_minimal() +
   theme(legend.position = "none",
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank())
@@ -125,24 +127,30 @@ p2 = plot.df %>%
         panel.grid.minor = element_blank())
 
 p3 = plot.df %>%
-  filter(type %in% c("y, latent (marked)","x, exemplar")) %>%
+  filter(type %in% c("y, latent (marked)","x, exemplar", "y, crime scene print")) %>%
+  pivot_wider(id_cols = c(x_pos, y_pos), names_from = type, values_from = value) %>%
+  pivot_longer(cols = c(`x, exemplar`, `y, latent (marked)`), names_to = "type", values_to = "value") %>%
   mutate(
     #type = ifelse(type == "Exemplar (x)", " Exemplar (x)", type), # for ordering facets
-    label = ifelse(value == 1, "m", NA) # Mark minutiae with *
+    label = ifelse(value == 1, "m*", NA), # Mark minutiae with m*,
+    y_miss = ifelse(type == "x, exemplar", 0, is.na(`y, crime scene print`))
   ) %>%
-  ggplot(aes(x = x_pos, y = y_pos, fill = is.na(value))) +
+  ggplot(aes(x = x_pos, y = y_pos, fill = as.factor(y_miss))) +
   geom_tile(col = "black") + 
-  geom_text(aes(label = label)) +
+  geom_text(aes(label = label, col = as.factor(y_miss))) +
   ggtitle("Evidence marked by analyst \n(by observing both prints simultaneously).") +
   xlab(NULL) + 
   ylab(NULL) +
   scale_fill_grey(start = .8, end = .2, na.value = "black") +
+  scale_color_grey(start = 0, end = 1, na.value = "black") +
   facet_wrap(~type, scales = "free_x") + 
+  theme_minimal() +
   theme(legend.position = "none",
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank())
 
-(p1 + p2 + p3) & theme(plot.title = element_text(hjust =.5))
+(p1 + p2 + p3) + plot_annotation(tag_levels = 'A') & theme(plot.title = element_text(hjust =.5),
+                                                           plot.tag = element_text(size = 8))
 
 ggsave(filename = 'outputs/imputation-sim.eps', width = 10, height = 3, units = "in", dpi = 300)
 

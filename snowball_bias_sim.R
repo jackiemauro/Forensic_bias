@@ -155,7 +155,7 @@ cascade_snowball_sim = function(nsims, share_missing, n_suspects, n_evidence){
     share.miss = rep(share_missing, n_evidence)
     
     mhat <- m <- m.cascade <- rep(NA,n_evidence)
-    m <- sapply(1:n_evidence, function(x) lik.ratio[x] * (Pi_E/Pi_EC) * (1/n_suspects))
+    m <- sapply(1:n_evidence, function(x) lik.ratio[x] ) #* (Pi_E/Pi_EC) * (1/n_suspects))
     m.cascade <- sapply(1:n_evidence, function(x) delta.func(i,m[x],share.miss[x])*m[x])
     mhat[1] <- m.cascade[1]
     
@@ -175,7 +175,7 @@ cascade_snowball_sim = function(nsims, share_missing, n_suspects, n_evidence){
 
 
 
-set.seed(081720)
+set.seed(040222)
 nsims = 1000
 share_missing = .01
 n_suspects = 2
@@ -223,20 +223,20 @@ bias_gg_df %>%
                arrow = arrow(length = unit(0.3, "cm"),
                              type = "open")) +
   labs(x = "Analyst (sequential order)",
-       y = "Bias in Posterior \n(Reported - Expected)",
+       y = "Bias in Likelihood \n(Reported - Expected)",
        col = "") +
-  annotate("errorbar", x = 0.8, ymin = 0, ymax = .25, col = "red4", width = .05) +
+  annotate("errorbar", x = 0.8, ymin = 0, ymax = .4, col = "red4", width = .05) +
   annotate("text", x = 0.8, y = .125, hjust = 1.5, label = expression(I[t[i]]), col = "red4", size = 6) +
-  annotate("errorbar", x = 2.1, ymin = .3, ymax = .42, col = "red4", width = .05) +
-  annotate("text", x = "B", y = .35, hjust = -.5, label = expression(LR[A]), col = "red4", size = 5) +
-  annotate("errorbar", x = 3.1, ymin = .26, ymax = .5, col = "red4", width = .05) +
-  annotate("text", x = "C", y = .38, hjust = -.5, label = expression(LR[B]), col = "red4", size = 5) +
-  annotate("errorbar", x = 4.1, ymin = .25, ymax = .54, col = "red4", width = .05) +
-  annotate("text", x = "D", y = .38, hjust = -.5, label = expression(LR[C]), col = "red4", size = 5) +
-  annotate("errorbar", x = 5.1, ymin = .25, ymax = .57, col = "red4", width = .05) +
-  annotate("text", x = "E", y = .38, hjust = -.5, label = expression(LR[D]), col = "red4", size = 5) +
-  annotate("text", x = "E", y = .577, hjust = -.15, label = "Bias Snowball", col = colors[3]) +
-  annotate("text", x = "E", y = .244, hjust = -.15, label = "Bias Cascade", col = colors[2]) +
+  annotate("errorbar", x = 2.1, ymin = .4, ymax = .42, col = "red4", width = .05) +
+  annotate("text", x = "B", y = .4, hjust = -.5, label = expression(LR[A]), col = "red4", size = 5) +
+  annotate("errorbar", x = 3.1, ymin = .4, ymax = .55, col = "red4", width = .05) +
+  annotate("text", x = "C", y = .45, hjust = -.5, label = expression(LR[B]), col = "red4", size = 5) +
+  annotate("errorbar", x = 4.1, ymin = .4, ymax = .6, col = "red4", width = .05) +
+  annotate("text", x = "D", y = .45, hjust = -.5, label = expression(LR[C]), col = "red4", size = 5) +
+  annotate("errorbar", x = 5.1, ymin = .4, ymax = .62, col = "red4", width = .05) +
+  annotate("text", x = "E", y = .45, hjust = -.5, label = expression(LR[D]), col = "red4", size = 5) +
+  annotate("text", x = "E", y = .62, hjust = -.15, label = "Bias Snowball", col = colors[3]) +
+  annotate("text", x = "E", y = .4, hjust = -.15, label = "Bias Cascade", col = colors[2]) +
   annotate("text", x = "E", y = 0, hjust = -.15, label = "No Bias", col = colors[1]) +
   theme_minimal() +
   theme(legend.position = "none") + 
@@ -247,3 +247,95 @@ ggsave(filename = '~/Forensic_bias/outputs/snowball_vs_cascade.eps',
        width = 8,
        height = 4)
 
+#### Very Uninteresting and Simple Version ####
+
+
+rbeta_shape1 = 1
+rbeta_shape2 = 10
+n_analysts = 5
+n_sims = 25
+
+run_snowball_cascade = function(n_analysts, 
+                                n_sims, 
+                                d_i_shape1, 
+                                d_i_shape2,
+                                d_imp_shape1, 
+                                d_imp_shape2,
+                                lr_shape1, 
+                                lr_shape2){
+simulation = list()
+
+for(jj in 1:n_sims){
+  sb_data = tibble(
+    analyst = 1:n_analysts, 
+    LR = 1 + rbeta(n_analysts, lr_shape1, lr_shape2)
+  )
+  
+  delta_i = 1 + rbeta(n_analysts, d_i_shape1, d_i_shape2)
+  delta_impute = 1 + rbeta(n_analysts, d_imp_shape1, d_imp_shape2)
+  
+  sb_data = sb_data %>%
+    mutate(
+      LR_cascade = delta_i * delta_impute * LR,
+      LR_snow = rep(NA,n_analysts)
+    ) 
+  
+  for(i in 1:5){
+    if(i==1){sb_data$LR_snow[i] = sb_data$LR_cascade[i]}
+    if(i>1){sb_data$LR_snow[i] = sb_data$LR_cascade[i] * sb_data$LR_snow[i-1]}
+  }
+  
+  simulation[[jj]] = sb_data
+}
+
+sim_df = bind_rows(simulation) %>%
+  mutate(sim_num = rep(1:n_sims, each = n_analysts)) %>%
+  pivot_longer(c(LR_cascade, LR_snow)) %>%
+  mutate(
+    bias = value - LR,
+    bias_type = ifelse(name == "LR_cascade", "Bias Cascade", "Bias Snowball")
+  )
+return(sim_df)
+}
+
+
+set.seed(042222)
+
+sim_df1 = run_snowball_cascade(5, 25, 1, 10, 1, 10, 1, 10)
+sim1_p = ggplot(sim_df1, aes(x = analyst, y = bias, col = bias_type)) +
+  geom_line(data = sim_df1 %>% filter(name == "LR_snow"), 
+            aes(group = sim_num),
+            col = "gray85") +  
+  geom_point() +
+  scale_color_grey(start = .6, end = .3) +
+  labs(
+    x = "Analyst (sequential order)",
+    y = "Bias in LR\n(Reported - Expected)",
+    col = "",
+    title = "Weak Support for Same-Source",
+    subtitle = "LR ~ 1 + Beta(1,10)"
+  ) +
+  theme_minimal()
+
+
+sim_df2 = run_snowball_cascade(5, 25, 5, 5, 1, 10, 1, 10)
+sim2_p = ggplot(sim_df2, aes(x = analyst, y = bias, col = bias_type)) +
+  geom_line(data = sim_df2 %>% filter(name == "LR_snow"), 
+            aes(group = sim_num),
+            col = "gray85") +  
+  geom_point() +
+  scale_color_grey(start = .6, end = .3) +
+  labs(
+    x = "Analyst (sequential order)",
+    y = "",
+    col = "",
+    title = "Mild Support for Same Source",
+    subtitle = "LR ~ 1 + Beta(5,5)"
+  ) +
+  theme_minimal()
+
+sim1_p + sim2_p + plot_layout(guides = "collect")
+
+ggsave(filename = '~/Forensic_bias/outputs/snowball_vs_cascade_2.eps',
+       width = 8,
+       height = 4)
